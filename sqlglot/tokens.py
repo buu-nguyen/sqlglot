@@ -391,6 +391,11 @@ class TokenType(AutoName):
     VERSION_SNAPSHOT = auto()
     TIMESTAMP_SNAPSHOT = auto()
     OPTION = auto()
+    EXPLAIN = auto()
+    MATCH_ANY = auto()
+    MATCH_ALL = auto()
+    MATCH_PHRASE = auto()
+    DUPLICATE_KEY = auto()
 
 
 _ALL_TOKEN_TYPES = list(TokenType)

@@ -1857,6 +1857,14 @@ class OnUpdateColumnConstraint(ColumnConstraintKind):
     pass
 
 
+class EnableConstraint(ColumnConstraintKind):
+    arg_types = {"this": False}
+
+
+class DisableColumnConstraint(ColumnConstraintKind):
+    arg_types = {"this": False}
+
+
 # https://docs.snowflake.com/en/sql-reference/sql/create-table
 class TagColumnConstraint(ColumnConstraintKind):
     arg_types = {"expressions": True}
@@ -2066,6 +2074,17 @@ class ColumnPrefix(Expression):
 
 
 class PrimaryKey(Expression):
+    arg_types = {"expressions": True, "options": False}
+
+class UniqueKey(Expression):
+    arg_types = {"expressions": True, "options": False}
+
+
+class DuplicateKey(Expression):
+    arg_types = {"expressions": True, "options": False}
+
+
+class DistributedByHash(Expression):
     arg_types = {"expressions": True, "options": False}
 
 
@@ -2670,6 +2689,10 @@ class OnCluster(Property):
 
 
 class LikeProperty(Property):
+    arg_types = {"this": True, "expressions": False}
+
+
+class AsProperty(Property):
     arg_types = {"this": True, "expressions": False}
 
 
@@ -4065,6 +4088,7 @@ class DataType(Expression):
         XML = auto()
         YEAR = auto()
         TDIGEST = auto()
+        FIXEDDECIMAL = auto()
 
     STRUCT_TYPES = {
         Type.NESTED,
@@ -5764,6 +5788,17 @@ class RegexpExtract(Func):
     }
 
 
+class RegexpExtractAll(Func):
+    arg_types = {
+        "this": True,
+        "expression": True,
+        "position": False,
+        "occurrence": False,
+        "parameters": False,
+        "group": False,
+    }
+
+
 class RegexpReplace(Func):
     arg_types = {
         "this": True,
@@ -6124,6 +6159,598 @@ FUNCTION_BY_NAME = {name: func for func in ALL_FUNCTIONS for name in func.sql_na
 JSON_PATH_PARTS = subclasses(__name__, JSONPathPart, (JSONPathPart,))
 
 PERCENTILES = (PercentileCont, PercentileDisc)
+
+
+# add expr
+class Ascii(Func):
+    pass
+
+
+class BitCount(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class SplitPart(Func):
+    arg_types = {"this": True, "delimiter": True, "field": True}
+
+
+class ArrayRepeat(Func):
+    arg_types = {"this": True, "expression": True}
+
+
+class BitwiseAndAgg(Func):
+    pass
+
+
+class BitwiseOrAgg(Func):
+    pass
+
+
+class TimeRound(Func):
+    arg_types = {"this": True, "period": False, "origin": False, "unit": False}
+
+
+class ArrayMin(Func):
+    pass
+
+
+class ArrayMax(Func):
+    pass
+
+
+class ConvertTz(Func):
+    arg_types = {"this": True, "from_tz": False, "to_tz": False}
+
+
+class Encrypt(Func):
+    arg_types = {"this": True, "expression": True, "key": True, "iv": False}
+
+
+class Decrypt(Func):
+    arg_types = {"this": True, "expression": True, "key": True, "iv": False}
+
+
+class LengthB(Func):
+    _sql_names = ["LENGTHB"]
+    pass
+
+
+class ArrayCount(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class ArrayReverse(Func):
+    pass
+
+
+class HasAny(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class NumbersTable(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class ListAgg(Func):
+    _sql_names = ["LISTAGG"]
+    arg_types = {"this": True, "expression": False}
+
+
+class Uuid(Func):
+    arg_types = {"this": False}
+
+
+class ArrayUniq(Func):  # doris:size(array_distinct())
+    arg_types = {"this": True, "expression": False}
+
+
+class Shuffle(Func):
+    arg_types = {"this": False, "expression": False}
+
+
+class Range(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class GroupBitAnd(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class GroupBitOr(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class GroupBitXor(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class GroupBitMap(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class GroupBitMapState(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class GroupBitMapOrState(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class GroupBitMapOrStateOrDefault(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class Replace(Func):
+    arg_types = {"this": True, "old": False, "new": False}
+
+
+class ReplaceEmpty(Func):
+    arg_types = {"this": True, "old": False, "new": False}
+
+
+class Explain(Expression):
+    arg_types = {"this": True, "expressions": True}
+
+    @property
+    def named_selects(self) -> t.List[str]:
+        return [e.output_name for e in self.expressions if e.alias_or_name]
+
+
+class JsonArrayLength(Func):
+    _sql_names = ["JSON_ARRAY_LENGTH"]
+    arg_types = {"this": True, "expressions": False}
+
+
+class MatchAny(Binary, Predicate):
+    pass
+
+
+class MatchAll(Binary, Predicate):
+    pass
+
+
+class MatchPhrase(Binary, Predicate):
+    pass
+
+
+class AssertTrue(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class ArrayStringConcat(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class ArrayAvg(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class ArrayCumSum(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class ArrayDifference(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class ArrayDistinct(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class ArrayCompact(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class ArrayEnumerate(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class ArrayEnumerateUniq(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class ArrayExists(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class ArrayFirst(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class ArrayFirstIndex(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class ArrayIntersect(Func):
+    is_var_len_args = True
+    arg_types = {"this": True, "expression": False}
+
+
+class ArrayLast(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class ArrayLastIndex(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class ArrayMap(Func):
+    is_var_len_args = True
+    arg_types = {"this": True, "expression": False}
+
+
+class ArrayPosition(Func):
+    arg_types = {"this": True, "pos": True}
+
+
+class ArrayElement(Func):
+    arg_types = {"this": True, "pos": True}
+
+
+class ArrayProduct(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class ArrayPopback(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class ArrayPopfront(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class ArrayPushback(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class ArrayPushfront(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class ArraySlice(Func):
+    arg_types = {"this": True, "off": True, "len": False}
+
+
+class ArrayRange(Func):
+    arg_types = {"start": True, "end": False, "step": False}
+
+
+class ArrayReverseSort(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class ArrayZip(Func):
+    is_var_len_args = True
+    arg_types = {"this": True, "expression": False}
+
+
+class Codepoint(Func):
+    arg_types = {"this": True, "expression": False, "start": False, "length": False}
+
+
+class BitmapSubsetInRange(Func):
+    arg_types = {"this": True, "range": True, "limit": True}
+
+
+class BitmapSubsetLimit(Func):
+    arg_types = {"this": True, "range": True, "limit": True}
+
+
+class SubBitmap(Func):
+    arg_types = {"this": True, "range": True, "limit": True}
+
+
+class BitmapMin(Func):
+    pass
+
+
+class BitmapMax(Func):
+    pass
+
+
+class ParseUrl(Func):
+    arg_types = {"this": True, "type": True}
+
+
+class ExtractUrlParameter(Func):
+    arg_types = {"this": True, "expressions": True}
+
+
+class BitmapAnd(Func):
+    arg_types = {"this": True, "expressions": True}
+
+
+class BitmapAndCount(Func):
+    arg_types = {"this": True, "expressions": True}
+
+
+class BitmapAndNot(Func):
+    arg_types = {"this": True, "expressions": True}
+
+
+class BitmapAndNotCount(Func):
+    arg_types = {"this": True, "expressions": True}
+
+
+class BitmapCount(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class BitmapContains(Func):
+    arg_types = {"this": True, "expressions": True}
+
+
+class BitmapFromArray(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class BitmapHasAll(Func):
+    arg_types = {"this": True, "expressions": True}
+
+
+class BitmapHasAny(Func):
+    arg_types = {"this": True, "expressions": True}
+
+
+class BitmapOr(Func):
+    arg_types = {"this": True, "expressions": True}
+
+
+class BitmapOrCount(Func):
+    arg_types = {"this": True, "expressions": True}
+
+
+class BitmapToArray(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class BitmapXor(Func):
+    arg_types = {"this": True, "expressions": True}
+
+
+class BitmapXOrCount(Func):
+    arg_types = {"this": True, "expressions": True}
+
+
+class Empty(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class EndsWith(Func):
+    arg_types = {"this": True, "expressions": True}
+
+
+class ToIpv4(Func):
+    arg_types = {"this": True}
+
+
+class ToIpv4OrDefault(Func):
+    arg_types = {"this": True}
+
+
+class ToIpv4OrNull(Func):
+    arg_types = {"this": True}
+
+
+class ToIpv6(Func):
+    arg_types = {"this": True}
+
+
+class ToIpv6OrDefault(Func):
+    arg_types = {"this": True}
+
+
+class ToIpv6OrNull(Func):
+    arg_types = {"this": True}
+
+
+class Ipv4NumToString(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class Ipv6NumToString(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class Ipv4StringToNum(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class Ipv6StringToNum(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class Ipv4StringToNumOrDefault(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class Ipv6StringToNumOrDefault(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class IsIpv4String(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class IsIpv6String(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class Ipv4CidrToRange(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class Ipv6CidrToRange(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class Ipv4StringToNumOrNull(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class Ipv6StringToNumOrNull(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class IsNotNull(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class LTrim(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class MultiMatchAny(Func):
+    arg_types = {"this": True, "expression": True}
+
+
+class RTrim(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class MapContainsKey(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class MapKeys(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class MapValues(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class NotEmpty(Func):
+    arg_types = {"this": True, "expressions": False}
+
+
+class RegexpReplaceOne(Func):
+    arg_types = {"this": True, "expression": True, "replacement": True}
+
+
+class StAstext(Func):
+    _sql_names = ["TO_GEOGRAPHY", "TRY_TO_GEOGRAPHY", "ST_GEOGRAPHYFROMWKB"]
+    arg_types = {"this": True, "expression": False}
+
+
+class UniqCombined(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class Truncate(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class Hour(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class Minute(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+# class Quarter(Func):
+#     arg_types = {"this": True, "expression": False}
+
+
+class Second(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class YearsAdd(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class QuartersAdd(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class MonthsAdd(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class WeeksAdd(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class DaysAdd(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class HoursAdd(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class MinutesAdd(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class SecondsAdd(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class YearsSub(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class MonthsSub(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class SecondsSub(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class QuartersSub(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class Today(Func):
+    arg_types = {"this": False, "expression": False}
+
+
+class ToYyyymm(Func):
+    arg_types = {"this": False, "expression": False}
+
+
+class ToYyyymmdd(Func):
+    arg_types = {"this": False, "expression": False}
+
+
+class ToYyyymmddhhmmss(Func):
+    arg_types = {"this": False, "expression": False}
+
+
+class ToStartOfQuarter(Func):
+    arg_types = {"this": False, "expression": False}
+
+
+class ToStartOfMonth(Func):
+    arg_types = {"this": False, "expression": False}
+
+
+class ToStartOfWeek(Func):
+    arg_types = {"this": False, "expression": False}
+
+
+class ToStartOfDay(Func):
+    arg_types = {"this": False, "expression": False}
+
+
+class ToStartOfHour(Func):
+    arg_types = {"this": False, "expression": False}
+
+
+class ToStartOfMinute(Func):
+    arg_types = {"this": False, "expression": False}
+
+
+class ToStartOfSecond(Func):
+    arg_types = {"this": False, "expression": False}
+
+
+class ToStartOfYear(Func):
+    arg_types = {"this": False, "expression": False}
 
 
 # Helpers

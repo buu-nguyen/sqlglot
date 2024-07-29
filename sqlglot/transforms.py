@@ -4,6 +4,7 @@ import typing as t
 
 from sqlglot import expressions as exp
 from sqlglot.helper import find_new_name, name_sequence
+from typing import Dict
 
 if t.TYPE_CHECKING:
     from sqlglot.generator import Generator
@@ -696,6 +697,133 @@ def struct_kv_to_alias(expression: exp.Expression) -> exp.Expression:
             ],
         )
 
+    return expression
+
+
+def replace_with_aliases(expression: exp.Expression) -> exp.Expression:
+    with_aliases_mapping: Dict[str, exp.Expression] = {}
+    # Intercept expr without CTE
+    if expression.find(exp.With):
+        from sqlglot.optimizer.scope import traverse_scope
+
+        # Traversing all scopes
+        for scope in traverse_scope(expression):
+            scope_expr = scope.expression
+            if scope_expr.find(exp.With):
+                for with_expr in next(scope_expr.find_all(exp.With)):
+                    with_expr = with_expr.parent
+                    if with_expr.find(exp.Select):
+                        break
+                    else:
+                        for cte in with_expr.expressions:
+                            alias = cte.args.get("alias").this.alias_or_name
+                            expr = cte.this
+                            expr = replace_expressions_with_aliases(
+                                expr, with_aliases_mapping, True
+                            )
+                            with_aliases_mapping[alias] = expr
+                        with_expr.pop()
+                replace_expressions_with_aliases(scope_expr, with_aliases_mapping, False)
+    return expression
+
+
+def replace_expressions_with_aliases(
+    expression, with_aliases_mapping: dict, is_with
+) -> exp.Expression:
+    from sqlglot.optimizer.scope import find_all_in_scope
+
+    for column in find_all_in_scope(expression, exp.Column):
+        # For example, this type of column, clickhouse's tuple type, like t.1
+        if column.args.get("table"):
+            replace_char = column.table
+            if replace_char in with_aliases_mapping:
+                column.parts[0].replace(with_aliases_mapping[replace_char])
+        else:
+            replace_char = column.this.alias_or_name
+            if replace_char in with_aliases_mapping:
+                # The previous level is select expr, which needs to add an alias
+                if (isinstance(column.parent, exp.Select)) and not is_with:
+                    column.this.replace(
+                        exp.Alias(this=with_aliases_mapping[replace_char], alias=replace_char)
+                    )
+                else:
+                    column.this.replace(with_aliases_mapping[replace_char])
+    return expression
+
+
+# Rewriting rules for forward and backward references at the same column level in ClickHouse
+def replace_column_clickhouse(expression: exp.Expression) -> exp.Expression:
+    # Check if the passed expression is specified as the CLICKHOUSE dialect
+    if expression.args.get("dialect") == "CLICKHOUSE":
+        from sqlglot.optimizer.scope import traverse_scope
+
+        # Traversing all scopes
+        for scope in traverse_scope(expression):
+            scope_expr = scope.expression
+            aliases_index = 1
+            column_aliases_mapping: Dict[str, exp.Expression] = {}
+            column_aliases_index_mapping: Dict[str, int] = {}
+            for i in scope_expr.expressions:
+                if isinstance(i, exp.Alias) and i.find(exp.Explode) is None:
+                    column_aliases_mapping[i.alias] = i.this
+                    column_aliases_index_mapping[i.alias] = aliases_index
+                    aliases_index += 1
+            for expr in scope_expr.expressions:
+                for column in expr.find_all(exp.Column):
+                    if expr.args.get("alias") is not None:
+                        alias = expr.args.get("alias").alias_or_name
+                        col = column.this.alias_or_name
+                        if alias == col:
+                            continue
+                        elif (
+                            col in column_aliases_mapping
+                            and column_aliases_index_mapping[col]
+                            > column_aliases_index_mapping[alias]
+                        ):
+                            raise Exception(f"Cyclic aliases for identifier '{col}'. In {scope}.")
+                    # For example, this type of column, clickhouse's tuple type, like t.1
+                    if column.args.get("table"):
+                        replace_char = column.table
+                        if replace_char in column_aliases_mapping:
+                            column.parts[0].replace(column_aliases_mapping[replace_char])
+                    else:
+                        replace_char = column.this.alias_or_name
+                        if replace_char in column_aliases_mapping:
+                            column.this.replace(column_aliases_mapping[replace_char])
+    return expression
+
+
+def array_join_rewrite(expression: exp.Expression) -> exp.Expression:
+    # Check if the passed expression is specified as the CLICKHOUSE dialect
+    if expression.args.get("dialect") == "CLICKHOUSE" and expression.find(exp.Join):
+        join_expr = expression.find(exp.Join)
+        if join_expr is not None and join_expr.args.get("kind") == "ARRAY":
+            for join in expression.find_all(exp.Join):
+                join_alias = [join.this.alias_or_name]
+                expression.append(
+                    "laterals",
+                    exp.Lateral(
+                        this=exp.Explode(this=join.this.this),
+                        view=True,
+                        alias=exp.TableAlias(this=exp.Identifier(this="tmp"), columns=join_alias),
+                    ),
+                )
+                join.pop()
+    elif expression.args.get("dialect") == "CLICKHOUSE" and expression.find(exp.Explode):
+        for explode in expression.find_all(exp.Explode):
+            if explode.parent is not None:
+                alias_or_name = getattr(explode.parent, "alias_or_name", None)
+                if alias_or_name:
+                    explode_alias = [alias_or_name]
+                    explode.replace(alias_or_name)
+            expression.append(
+                "laterals",
+                exp.Lateral(
+                    this=exp.Explode(this=explode.this),
+                    view=True,
+                    alias=exp.TableAlias(this=exp.Identifier(this="tmp"), columns=explode_alias),
+                ),
+            )
     return expression
 
 
