@@ -613,7 +613,7 @@ class Doris(MySQL):
             exp.DataType.Type.NESTED,
         ]
 
-        DORIS_SURROPT_PROPERTIES = [
+        DORIS_SUPPORT_PROPERTIES = [
             "dynamic_partition.enable",
             "dynamic_partition.time_unit",
             "dynamic_partition.prefix",
@@ -912,7 +912,7 @@ class Doris(MySQL):
                 if (
                     prop.this
                     and prop.this.this
-                    and str(prop.this.this).lower() not in self.DORIS_SURROPT_PROPERTIES
+                    and str(prop.this.this).lower() not in self.DORIS_SUPPORT_PROPERTIES
                 ):
                     remove_prop.append(prop)
             for prop in remove_prop:
@@ -1001,7 +1001,7 @@ class Doris(MySQL):
                 else:
                     return "DATETIME"
 
-            dialect = root_expression.args["dialect"]
+            dialect = root_expression.args.get("dialect")
             if dialect in ("HIVE", "SPARK"):
                 return self.hive_type_to_doris(expression)
             elif dialect == "CLICKHOUSE":
@@ -1028,7 +1028,7 @@ class Doris(MySQL):
             # The 'create xxx like xxx' and 'create xxx as select xxx' statements is not processed
             if (
                 expression.find(exp.LikeProperty, exp.Select)
-                and root_expression.args["dialect"] != "TERADATA"
+                and root_expression.args.get("dialect") != "TERADATA"
             ):
                 return generator.Generator.create_sql(self, expression)
 
@@ -1082,7 +1082,7 @@ class Doris(MySQL):
                         0, exp.ColumnDef(this=this, kind=kind, constraints=constraints)
                     )
 
-            dialect = expression.args["dialect"]
+            dialect = expression.args.get("dialect")
             if dialect == "MYSQL" or dialect == "ORACLE" or dialect == "CLICKHOUSE":
                 return self.create_mysql_or_oracle_or_clickhouse_sql(expression)
             elif dialect in ("HIVE", "PRESTO", "SPARK", "TRINO"):
@@ -1189,7 +1189,7 @@ class Doris(MySQL):
             return generator.Generator.datatype_sql(self, expression)
 
         def create_mysql_or_oracle_or_clickhouse_sql(self, expression: exp.Create) -> str:
-            dialect = expression.args["dialect"]
+            dialect = expression.args.get("dialect")
             key_list = []
             col_def_list = []
             expressions = expression.this.expressions
@@ -1333,7 +1333,7 @@ class Doris(MySQL):
                 )
 
         def create_hive_or_presto_or_trino_or_spark_sql(self, expression: exp.Create) -> str:
-            dialect = expression.args["dialect"]
+            dialect = expression.args.get("dialect")
             # Add the columns in the hive partition to the corresponding schema
             parti_range_column = None
             partion_list_column = []
@@ -1455,7 +1455,7 @@ class Doris(MySQL):
 
         def create_postgres_or_teradata_sql(self, expression: exp.Create) -> str:
             # Obtain the corresponding partition columns according to the situation
-            dialect = expression.args["dialect"]
+            dialect = expression.args.get("dialect")
             parti_range_column = None
             parti_range_granularity = None
             model_selection = None
