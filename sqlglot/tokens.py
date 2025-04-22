@@ -51,6 +51,8 @@ class TokenType(AutoName):
     NOT = auto()
     EQ = auto()
     NEQ = auto()
+    # [+doris]
+    PLACING = auto()
     NULLSAFE_EQ = auto()
     COLON_EQ = auto()
     AND = auto()
@@ -221,7 +223,9 @@ class TokenType(AutoName):
     TDIGEST = auto()
     UNKNOWN = auto()
     VECTOR = auto()
-    DYNAMIC = auto()
+    # [+doris]
+    MULTI_DIMENSIONAL_ARRAY = auto()
+    INTERVAL_DATETIME = auto()
 
     # keywords
     ALIAS = auto()

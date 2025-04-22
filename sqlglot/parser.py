@@ -614,6 +614,8 @@ class Parser(metaclass=_Parser):
         TokenType.NEXT,
         TokenType.OFFSET,
         TokenType.PRIMARY_KEY,
+        # [+doris]
+        TokenType.WATERMARK_FOR,
         TokenType.RANGE,
         TokenType.REPLACE,
         TokenType.RLIKE,
@@ -631,6 +633,8 @@ class Parser(metaclass=_Parser):
         TokenType.TRUNCATE,
         TokenType.WINDOW,
         TokenType.XOR,
+        # [+doris]
+        TokenType.PLACING,
         *TYPE_TOKENS,
         *SUBQUERY_PREDICATES,
     }
@@ -651,6 +655,8 @@ class Parser(metaclass=_Parser):
         TokenType.EQ: exp.EQ,
         TokenType.NEQ: exp.NEQ,
         TokenType.NULLSAFE_EQ: exp.NullSafeEQ,
+        # [+doris]
+        TokenType.PLACING: exp.Placing,
     }
 
     COMPARISON = {
@@ -1359,6 +1365,8 @@ class Parser(metaclass=_Parser):
         TokenType.KEY,
         TokenType.PRIMARY_KEY,
         TokenType.UNIQUE,
+        # [+doris]
+        TokenType.WATERMARK_FOR,
     }
 
     DISTINCT_TOKENS = {TokenType.DISTINCT}
@@ -2066,6 +2074,8 @@ class Parser(metaclass=_Parser):
             clone=clone,
             concurrently=concurrently,
             clustered=clustered,
+            # [+doris]
+            dialect=dialect,
         )
 
     def _parse_sequence_properties(self) -> t.Optional[exp.SequenceProperties]:
@@ -3761,6 +3771,8 @@ class Parser(metaclass=_Parser):
             with_storage=with_storage,
             tablespace=tablespace,
             on=on,
+            # [+doris]
+            with_load_identity=with_load_identity,
         )
 
     def _parse_index(
@@ -6760,7 +6772,17 @@ class Parser(metaclass=_Parser):
 
         if self._match(TokenType.COLLATE):
             collation = self._parse_bitwise()
-
+        # [+doris]
+        dialect = self.dialect.__module__.split(".")[-1].upper()
+        if dialect in "MYSQL":
+            return self.expression(
+                exp.Trim,
+                this=this,
+                position=position,
+                expression=expression,
+                collation=collation,
+                dialect=dialect,
+            )
         return self.expression(
             exp.Trim, this=this, position=position, expression=expression, collation=collation
         )
@@ -7333,6 +7355,9 @@ class Parser(metaclass=_Parser):
             alter_set.set("copy_options", self._parse_wrapped_options())
         elif self._match_text_seq("TAG") or self._match_text_seq("TAGS"):
             alter_set.set("tag", self._parse_csv(self._parse_assignment))
+        # [+doris]
+        elif self._match_text_seq("PROPERTIES"):
+            alter_set.set("properties", self._parse_properties())
         else:
             if self._match_text_seq("SERDE"):
                 alter_set.set("serde", self._parse_field())

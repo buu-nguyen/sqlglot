@@ -5057,6 +5057,11 @@ class Like(Binary, Predicate):
     pass
 
 
+# [+doris]
+class Placing(Binary, Predicate):
+    pass
+
+
 class LikeAny(Binary, Predicate):
     pass
 
@@ -5416,6 +5421,79 @@ class ToArray(Func):
 class List(Func):
     arg_types = {"expressions": False}
     is_var_len_args = True
+
+
+# [+doris]
+class Locate(Func):
+    arg_types = {"this": True, "search_value": True, "search_location": True}
+
+
+class LocalTimestamp(Func):
+    arg_types = {"this": False}
+
+
+class LocalTime(Func):
+    arg_types = {"this": False}
+
+
+class Bin(Func):
+    pass
+
+
+class Rank(Func):
+    arg_types: t.Dict[str, t.Any] = {}
+
+
+class DenseRank(Func):
+    arg_types: t.Dict[str, t.Any] = {}
+
+
+class SplitIndex(Func):
+    arg_types = {"this": True, "separator": True, "extract_location": False}
+
+
+class Substr(Func):
+    arg_types = {"this": True, "start": False, "length": False}
+
+
+class Now(Func):
+    arg_types = {"this": False}
+
+
+class UnixTimestamp(Func):
+    arg_types = {"this": False, "format": False}
+
+
+class ToTimestamp(Func):
+    arg_types = {"this": False, "format": False}
+
+
+class FromUnixTime(Func):
+    arg_types = {"this": False, "format": False}
+
+
+class ToDate(Func):
+    pass
+
+
+class Regexp(Func):
+    arg_types = {"this": True, "matching_value": True}
+
+
+class Overlay(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class TableFunc(Func):
+    pass
+
+
+class Tumble(Func):
+    arg_types = {"this": False, "expression": False}
+
+
+class Descriptor(Func):
+    pass
 
 
 # String pad, kind True -> LPAD, False -> RPAD
@@ -6763,6 +6841,8 @@ class Trim(Func):
         "expression": False,
         "position": False,
         "collation": False,
+        # [+doris]
+        "dialect": False,
     }
 
 

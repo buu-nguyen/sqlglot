@@ -186,6 +186,10 @@ def eliminate_distinct_on(expression: exp.Expression) -> exp.Expression:
         distinct_cols = expression.args["distinct"].pop().args["on"].expressions
         window = exp.Window(this=exp.RowNumber(), partition_by=distinct_cols)
 
+        # [+doris]
+        window = exp.Window(
+            this=(exp.RowNumber() or exp.Rank() or exp.DenseRank()), partition_by=distinct_cols
+        )
         order = expression.args.get("order")
         if order:
             window.set("order", order.pop())

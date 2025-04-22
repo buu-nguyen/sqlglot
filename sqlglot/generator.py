@@ -1470,6 +1470,8 @@ class Generator(metaclass=_Generator):
         if not self.SET_OP_MODIFIERS:
             limit = expression.args.get("limit")
             order = expression.args.get("order")
+            # [+doris]
+            offset = expression.args.get("offset")
 
             if limit or order:
                 select = self._move_ctes_to_top_level(
@@ -1480,6 +1482,9 @@ class Generator(metaclass=_Generator):
                     select = select.limit(limit.pop(), copy=False)
                 if order:
                     select = select.order_by(order.pop(), copy=False)
+                # [+doris]
+                if offset:
+                    select = select.offset(offset.pop(), copy=False)
                 return self.sql(select)
 
         sqls: t.List[str] = []
@@ -3415,6 +3420,14 @@ class Generator(metaclass=_Generator):
             actions = self.expressions(expression, key="actions", flat=True)
         elif isinstance(actions[0], exp.Query):
             actions = "AS " + self.expressions(expression, key="actions")
+        # [+doris] alter table set properties
+        elif actions[0].args.get("properties"):
+            properties = actions[0].args.get("properties").args["expressions"]
+            properties_list = []
+            for expr in properties:
+                if isinstance(expr, exp.Property):
+                    properties_list.append(expr.sql())
+            actions = f"SET PROPERTIES {', '.join(properties_list)}"
         else:
             actions = self.expressions(expression, key="actions", flat=True)
 
